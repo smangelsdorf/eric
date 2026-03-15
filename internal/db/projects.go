@@ -10,16 +10,23 @@ type Project struct {
 	Description string
 }
 
-func RegisterProject(db *sql.DB, name, description string) error {
-	_, err := db.Exec(
+// RegisterProject creates or updates a project. Returns true if the project
+// already existed (i.e. was updated rather than created).
+func RegisterProject(db *sql.DB, name, description string) (updated bool, err error) {
+	var exists bool
+	if err := db.QueryRow(`SELECT COUNT(*) > 0 FROM projects WHERE name = ?`, name).Scan(&exists); err != nil {
+		return false, fmt.Errorf("checking project: %w", err)
+	}
+
+	_, err = db.Exec(
 		`INSERT INTO projects (name, description) VALUES (?, ?)
 		 ON CONFLICT(name) DO UPDATE SET description = excluded.description`,
 		name, description,
 	)
 	if err != nil {
-		return fmt.Errorf("registering project: %w", err)
+		return false, fmt.Errorf("registering project: %w", err)
 	}
-	return nil
+	return exists, nil
 }
 
 func ListProjects(db *sql.DB) ([]Project, error) {

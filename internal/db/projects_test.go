@@ -12,10 +12,10 @@ func TestRegisterAndListProjects(t *testing.T) {
 	}
 	defer database.Close()
 
-	if err := RegisterProject(database, "project-a", "First project"); err != nil {
+	if _, err := RegisterProject(database, "project-a", "First project"); err != nil {
 		t.Fatalf("registering project: %v", err)
 	}
-	if err := RegisterProject(database, "project-b", "Second project"); err != nil {
+	if _, err := RegisterProject(database, "project-b", "Second project"); err != nil {
 		t.Fatalf("registering project: %v", err)
 	}
 
@@ -39,11 +39,20 @@ func TestRegisterProjectUpsert(t *testing.T) {
 	}
 	defer database.Close()
 
-	if err := RegisterProject(database, "proj", "Original"); err != nil {
+	updated, err := RegisterProject(database, "proj", "Original")
+	if err != nil {
 		t.Fatalf("registering project: %v", err)
 	}
-	if err := RegisterProject(database, "proj", "Updated"); err != nil {
+	if updated {
+		t.Fatal("expected new project, got updated")
+	}
+
+	updated, err = RegisterProject(database, "proj", "Updated")
+	if err != nil {
 		t.Fatalf("re-registering project: %v", err)
+	}
+	if !updated {
+		t.Fatal("expected updated project, got new")
 	}
 
 	projects, err := ListProjects(database)

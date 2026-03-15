@@ -65,8 +65,12 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		if strings.TrimSpace(args.Name) == "" {
 			return toolError(fmt.Errorf("project name is required")), nil, nil
 		}
-		if err := db.RegisterProject(s.db, args.Name, args.Description); err != nil {
+		updated, err := db.RegisterProject(s.db, args.Name, args.Description)
+		if err != nil {
 			return toolError(err), nil, nil
+		}
+		if updated {
+			return toolText(fmt.Sprintf("Project %q updated.", args.Name)), nil, nil
 		}
 		return toolText(fmt.Sprintf("Project %q registered.", args.Name)), nil, nil
 	})
