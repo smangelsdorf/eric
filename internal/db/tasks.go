@@ -27,7 +27,7 @@ func nextTaskID(tx *sql.Tx) (string, error) {
 	return fmt.Sprintf("ERIC-%d", seq), nil
 }
 
-func CreateTask(db *sql.DB, summary, origin, destination, filePath string) (*Task, error) {
+func CreateTask(db *sql.DB, summary, origin, destination string, filePathFn func(id string) string) (*Task, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("beginning transaction: %w", err)
@@ -38,6 +38,8 @@ func CreateTask(db *sql.DB, summary, origin, destination, filePath string) (*Tas
 	if err != nil {
 		return nil, err
 	}
+
+	filePath := filePathFn(id)
 
 	var createdAt time.Time
 	err = tx.QueryRow(

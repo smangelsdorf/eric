@@ -20,8 +20,12 @@ func DefaultStoragePath() (string, error) {
 	return dir, nil
 }
 
+func TaskFilePath(storageDir, taskID string) string {
+	return filepath.Join(storageDir, taskID+".md")
+}
+
 func WriteTaskFile(storageDir, taskID, summary, origin, destination, content string) (string, error) {
-	filePath := filepath.Join(storageDir, taskID+".md")
+	filePath := TaskFilePath(storageDir, taskID)
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	md := fmt.Sprintf("# %s\n\n"+

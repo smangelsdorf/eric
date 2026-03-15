@@ -115,17 +115,14 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 			}
 		}
 
-		task, err := db.CreateTask(s.db, args.Summary, args.Origin, args.Destination, "")
+		task, err := db.CreateTask(s.db, args.Summary, args.Origin, args.Destination, func(id string) string {
+			return storage.TaskFilePath(s.storageDir, id)
+		})
 		if err != nil {
 			return toolError(err), nil, nil
 		}
 
-		filePath, err := storage.WriteTaskFile(s.storageDir, task.ID, args.Summary, args.Origin, args.Destination, args.Content)
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-
-		if _, err := s.db.Exec(`UPDATE tasks SET file_path = ? WHERE id = ?`, filePath, task.ID); err != nil {
+		if _, err := storage.WriteTaskFile(s.storageDir, task.ID, args.Summary, args.Origin, args.Destination, args.Content); err != nil {
 			return toolError(err), nil, nil
 		}
 

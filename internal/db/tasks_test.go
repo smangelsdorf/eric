@@ -1,8 +1,13 @@
 package db
 
 import (
+	"fmt"
 	"testing"
 )
+
+func staticPath(path string) func(string) string {
+	return func(string) string { return path }
+}
 
 func TestCreateAndGetTask(t *testing.T) {
 	dbPath := t.TempDir() + "/test.db"
@@ -15,7 +20,7 @@ func TestCreateAndGetTask(t *testing.T) {
 	RegisterProject(database, "origin-proj", "Origin")
 	RegisterProject(database, "dest-proj", "Destination")
 
-	task, err := CreateTask(database, "Test task", "origin-proj", "dest-proj", "/tmp/test.md")
+	task, err := CreateTask(database, "Test task", "origin-proj", "dest-proj", staticPath("/tmp/test.md"))
 	if err != nil {
 		t.Fatalf("creating task: %v", err)
 	}
@@ -49,8 +54,9 @@ func TestTaskSequence(t *testing.T) {
 	RegisterProject(database, "a", "")
 	RegisterProject(database, "b", "")
 
-	t1, _ := CreateTask(database, "First", "a", "b", "/tmp/1.md")
-	t2, _ := CreateTask(database, "Second", "a", "b", "/tmp/2.md")
+	pathFn := func(id string) string { return fmt.Sprintf("/tmp/%s.md", id) }
+	t1, _ := CreateTask(database, "First", "a", "b", pathFn)
+	t2, _ := CreateTask(database, "Second", "a", "b", pathFn)
 
 	if t1.ID != "ERIC-1" {
 		t.Fatalf("expected ERIC-1, got %s", t1.ID)
@@ -72,9 +78,9 @@ func TestListTasksWithFilter(t *testing.T) {
 	RegisterProject(database, "b", "")
 	RegisterProject(database, "c", "")
 
-	CreateTask(database, "Task 1", "a", "b", "/tmp/1.md")
-	CreateTask(database, "Task 2", "a", "c", "/tmp/2.md")
-	CreateTask(database, "Task 3", "b", "c", "/tmp/3.md")
+	CreateTask(database, "Task 1", "a", "b", staticPath("/tmp/1.md"))
+	CreateTask(database, "Task 2", "a", "c", staticPath("/tmp/2.md"))
+	CreateTask(database, "Task 3", "b", "c", staticPath("/tmp/3.md"))
 
 	// Filter by origin
 	tasks, err := ListTasks(database, TaskFilter{Origin: "a"})
@@ -115,7 +121,7 @@ func TestUpdateTaskStatus(t *testing.T) {
 	RegisterProject(database, "a", "")
 	RegisterProject(database, "b", "")
 
-	CreateTask(database, "Task", "a", "b", "/tmp/1.md")
+	CreateTask(database, "Task", "a", "b", staticPath("/tmp/1.md"))
 
 	if err := UpdateTaskStatus(database, "ERIC-1", "closed"); err != nil {
 		t.Fatalf("updating status: %v", err)
