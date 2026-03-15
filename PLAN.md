@@ -27,6 +27,6 @@
 
 ## Phase 4: Polish
 
-- [ ] Error handling and validation
-- [ ] Documentation for MCP client configuration
+- [x] Error handling and validation
+- [x] Documentation for MCP client configuration
 - [x] Testing (db layer)

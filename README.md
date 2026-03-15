@@ -25,3 +25,15 @@ A **task** represents a piece of work passed from one project to another:
 - **Content** — date-stamped Markdown file on disk, referenced by file path in the index
 
 A **project** is a named entity registered with Eric. Projects are not tied to working directories (because of Git worktrees, among other reasons) — they must be explicitly registered before tasks can reference them.
+
+## Setup
+
+Build the binary, then register it as an MCP server:
+
+```bash
+go build -o eric .
+
+claude mcp add --transport stdio --scope user eric -- /path/to/eric
+```
+
+Data is stored in `~/.eric/` (SQLite database and Markdown task files).
