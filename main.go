@@ -188,6 +188,40 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		return toolText(fmt.Sprintf("Updated task %s.", args.ID)), nil, nil
 	})
 
+	type searchTasksArgs struct {
+		Query string `json:"query" jsonschema:"Text to search for in task content (case-insensitive)"`
+	}
+	mcp.AddTool(mcpServer, &mcp.Tool{
+		Name:        "search_tasks",
+		Description: "Search task content for a query string. Returns tasks whose Markdown content contains the query (case-insensitive).",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args searchTasksArgs) (*mcp.CallToolResult, any, error) {
+		tasks, err := db.ListTasks(s.db, db.TaskFilter{})
+		if err != nil {
+			return toolError(err), nil, nil
+		}
+		var matches []db.Task
+		for _, t := range tasks {
+			if t.FilePath == "" {
+				continue
+			}
+			found, err := storage.FileContains(t.FilePath, args.Query)
+			if err != nil {
+				continue
+			}
+			if found {
+				matches = append(matches, t)
+			}
+		}
+		if len(matches) == 0 {
+			return toolText(fmt.Sprintf("No tasks found matching %q.", args.Query)), nil, nil
+		}
+		text := fmt.Sprintf("Tasks matching %q:\n", args.Query)
+		for _, t := range matches {
+			text += fmt.Sprintf("- **%s** [%s]: %s (%s → %s)\n", t.ID, t.Status, t.Summary, t.Origin, t.Destination)
+		}
+		return toolText(text), nil, nil
+	})
+
 	type closeTaskArgs struct {
 		ID string `json:"id" jsonschema:"Task ID (e.g. ERIC-1)"`
 	}

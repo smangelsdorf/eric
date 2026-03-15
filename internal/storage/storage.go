@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -61,4 +62,13 @@ func ReadTaskFile(filePath string) (string, error) {
 		return "", fmt.Errorf("reading task file: %w", err)
 	}
 	return string(data), nil
+}
+
+// FileContains checks whether a task file contains the given query (case-insensitive).
+func FileContains(filePath, query string) (bool, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return false, fmt.Errorf("reading task file: %w", err)
+	}
+	return strings.Contains(strings.ToLower(string(data)), strings.ToLower(query)), nil
 }

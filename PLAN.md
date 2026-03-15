@@ -23,7 +23,7 @@
 
 - [x] Query tasks by destination (what's incoming for this project?)
 - [x] Query tasks by origin (what did this project send out?)
-- [ ] Search task content
+- [x] Search task content
 
 ## Phase 4: Polish
 
