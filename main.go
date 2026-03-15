@@ -176,7 +176,7 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 
 		content, err := storage.ReadTaskFile(task.FilePath)
 		if err != nil {
-			return toolError(err), nil, nil
+			return toolError(fmt.Errorf("task %s: %w", task.ID, err)), nil, nil
 		}
 		return toolText(content), nil, nil
 	})
@@ -201,7 +201,7 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		}
 
 		if err := storage.AppendToTaskFile(task.FilePath, args.Content); err != nil {
-			return toolError(err), nil, nil
+			return toolError(fmt.Errorf("task %s: %w", task.ID, err)), nil, nil
 		}
 		return toolText(fmt.Sprintf("Updated task %s.", args.ID)), nil, nil
 	})
