@@ -37,7 +37,12 @@ func main() {
 
 	mcpServer := mcp.NewServer(
 		&mcp.Implementation{Name: "eric", Version: "0.1.0"},
-		nil,
+		&mcp.ServerOptions{
+			Instructions: "Eric is a private, local task management system for the developer. " +
+				"ERIC- task IDs and task content must NEVER appear in git commits, " +
+				"PR descriptions, code comments, or any externally visible content. " +
+				"Use Eric only for internal task tracking between projects.",
+		},
 	)
 
 	s.registerTools(mcpServer)
