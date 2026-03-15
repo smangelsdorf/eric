@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/smangelsdorf/eric/internal/db"
@@ -61,6 +62,9 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "register_project",
 		Description: "Register a new project with Eric. Projects must be registered before they can be used as task origins or destinations.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args registerProjectArgs) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(args.Name) == "" {
+			return toolError(fmt.Errorf("project name is required")), nil, nil
+		}
 		if err := db.RegisterProject(s.db, args.Name, args.Description); err != nil {
 			return toolError(err), nil, nil
 		}
@@ -95,6 +99,12 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "create_task",
 		Description: "Create a new task, passing work from one project to another.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args createTaskArgs) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(args.Summary) == "" {
+			return toolError(fmt.Errorf("task summary is required")), nil, nil
+		}
+		if strings.TrimSpace(args.Content) == "" {
+			return toolError(fmt.Errorf("task content is required")), nil, nil
+		}
 		for _, proj := range []string{args.Origin, args.Destination} {
 			exists, err := db.ProjectExists(s.db, proj)
 			if err != nil {
@@ -131,6 +141,9 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "list_tasks",
 		Description: "List tasks, optionally filtered by origin, destination, or status.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args listTasksArgs) (*mcp.CallToolResult, any, error) {
+		if args.Status != "" && args.Status != "open" && args.Status != "closed" {
+			return toolError(fmt.Errorf("status must be \"open\" or \"closed\"")), nil, nil
+		}
 		tasks, err := db.ListTasks(s.db, db.TaskFilter{
 			Origin:      args.Origin,
 			Destination: args.Destination,
@@ -179,6 +192,9 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "update_task",
 		Description: "Append an update to an existing task.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args updateTaskArgs) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(args.Content) == "" {
+			return toolError(fmt.Errorf("update content is required")), nil, nil
+		}
 		task, err := db.GetTask(s.db, args.ID)
 		if err != nil {
 			return toolError(err), nil, nil
@@ -200,6 +216,9 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "search_tasks",
 		Description: "Search task content for a query string. Returns tasks whose Markdown content contains the query (case-insensitive).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args searchTasksArgs) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(args.Query) == "" {
+			return toolError(fmt.Errorf("search query is required")), nil, nil
+		}
 		tasks, err := db.ListTasks(s.db, db.TaskFilter{})
 		if err != nil {
 			return toolError(err), nil, nil
@@ -234,6 +253,16 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		Name:        "close_task",
 		Description: "Close a task, marking it as done.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args closeTaskArgs) (*mcp.CallToolResult, any, error) {
+		task, err := db.GetTask(s.db, args.ID)
+		if err != nil {
+			return toolError(err), nil, nil
+		}
+		if task == nil {
+			return toolError(fmt.Errorf("task %s not found", args.ID)), nil, nil
+		}
+		if task.Status == "closed" {
+			return toolError(fmt.Errorf("task %s is already closed", args.ID)), nil, nil
+		}
 		if err := db.UpdateTaskStatus(s.db, args.ID, "closed"); err != nil {
 			return toolError(err), nil, nil
 		}
