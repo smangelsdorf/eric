@@ -30,3 +30,19 @@
 - [x] Error handling and validation
 - [x] Documentation for MCP client configuration
 - [x] Testing (db layer)
+
+## Phase 5: Concurrency & Multi-Process Safety
+
+- [x] Set `busy_timeout` pragma so concurrent writers wait instead of failing
+- [ ] Add concurrency tests for simultaneous reads/writes
+
+## Phase 6: TUI
+
+- [x] Add Bubble Tea dependency
+- [x] Single table view: task ID, summary, status, created date
+- [x] Sort order: open tasks first, then descending by created date
+- [x] Styling: cyan borders, white text (open), grey text (closed), green status for open, yellow highlight on dates older than 1 week
+- [x] Hint bar at bottom: shortcut key in light green, rest of label in white
+- [x] Keyboard actions: close/reopen (immediate, reversible)
+- [x] Space to open task content in a centered modal popup (white border, white text, scrollable)
+- [x] Live refresh via `PRAGMA data_version` polling
