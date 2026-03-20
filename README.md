@@ -33,8 +33,12 @@ Build the binary, then register it as an MCP server:
 ```bash
 go build -o eric .
 
-claude mcp add --transport stdio --scope user eric -- /path/to/eric
+claude mcp add --transport stdio --scope user \
+  --allow-tools "mcp__eric__list_*,mcp__eric__get_task,mcp__eric__search_tasks" \
+  eric -- /path/to/eric
 ```
+
+This pre-approves the read-only tools (`list_projects`, `list_tasks`, `get_task`, `search_tasks`) so they won't prompt for confirmation each time. Mutating tools (`create_task`, `update_task`, `close_task`, `register_project`) will still require approval.
 
 Data is stored in `~/.eric/` (SQLite database and Markdown task files).
 
