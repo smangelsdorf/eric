@@ -18,6 +18,7 @@ func renderHints(hints []hint) string {
 var tableHints = []hint{
 	{"j/k", "navigate"},
 	{"space", "view"},
+	{"s", "start"},
 	{"c", "close"},
 	{"o", "reopen"},
 	{"q", "quit"},

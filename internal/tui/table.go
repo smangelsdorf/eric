@@ -11,7 +11,7 @@ import (
 
 const (
 	colIDWidth     = 10
-	colStatusWidth = 8
+	colStatusWidth = 13
 	colDateWidth   = 12
 	colPadding     = 2 // padding per cell (0,1 on each side)
 	colCount       = 4
@@ -69,6 +69,11 @@ func renderTable(tasks []db.Task, cursor, width, pageSize int) string {
 			summary = closedRowStyle.Render(summary)
 			status = statusClosed.Render(status)
 			date = closedRowStyle.Render(date)
+		} else if t.Status == "in_progress" {
+			id = inProgressRowStyle.Render(id)
+			summary = inProgressRowStyle.Render(summary)
+			status = statusInProgress.Render(status)
+			date = inProgressRowStyle.Render(date)
 		} else {
 			if t.Status == "open" {
 				status = statusOpen.Render(status)

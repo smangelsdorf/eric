@@ -11,9 +11,11 @@ var (
 	headerStyle    = lipgloss.NewStyle().Bold(true).Padding(0, 1)
 	cellStyle      = lipgloss.NewStyle().Padding(0, 1)
 	cursorStyle    = lipgloss.NewStyle().Reverse(true)
-	closedRowStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // grey
-	statusOpen     = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
-	statusClosed   = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	closedRowStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // grey
+	statusOpen        = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
+	statusInProgress  = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true) // yellow bold
+	statusClosed      = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	inProgressRowStyle = lipgloss.NewStyle().Bold(true)
 	dateOld        = lipgloss.NewStyle().Foreground(lipgloss.Color("3")) // yellow
 
 	// Modal

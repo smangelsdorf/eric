@@ -134,3 +134,17 @@ func UpdateTaskStatus(db *sql.DB, id, status string) error {
 	}
 	return nil
 }
+
+// StartTask sets a task to in_progress. Multiple tasks can be in-progress simultaneously.
+// Closed tasks cannot be started.
+func StartTask(database *sql.DB, id string) error {
+	result, err := database.Exec(`UPDATE tasks SET status = 'in_progress' WHERE id = ? AND status != 'closed'`, id)
+	if err != nil {
+		return fmt.Errorf("starting task: %w", err)
+	}
+	n, _ := result.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("task %s not found or is closed", id)
+	}
+	return nil
+}

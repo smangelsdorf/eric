@@ -136,14 +136,14 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 	type listTasksArgs struct {
 		Origin      string `json:"origin,omitempty" jsonschema:"Filter by origin project"`
 		Destination string `json:"destination,omitempty" jsonschema:"Filter by destination project"`
-		Status      string `json:"status,omitempty" jsonschema:"Filter by status (open or closed)"`
+		Status      string `json:"status,omitempty" jsonschema:"Filter by status (open, in_progress, or closed)"`
 	}
 	mcp.AddTool(mcpServer, &mcp.Tool{
 		Name:        "list_tasks",
 		Description: "List tasks, optionally filtered by origin, destination, or status.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args listTasksArgs) (*mcp.CallToolResult, any, error) {
-		if args.Status != "" && args.Status != "open" && args.Status != "closed" {
-			return toolError(fmt.Errorf("status must be \"open\" or \"closed\"")), nil, nil
+		if args.Status != "" && args.Status != "open" && args.Status != "in_progress" && args.Status != "closed" {
+			return toolError(fmt.Errorf("status must be \"open\", \"in_progress\", or \"closed\"")), nil, nil
 		}
 		tasks, err := db.ListTasks(s.db, db.TaskFilter{
 			Origin:      args.Origin,
@@ -262,12 +262,25 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 			return toolError(fmt.Errorf("task %s not found", args.ID)), nil, nil
 		}
 		if task.Status == "closed" {
-			return toolError(fmt.Errorf("task %s is already closed", args.ID)), nil, nil
+			return toolError(fmt.Errorf("task %s is already closed", task.ID)), nil, nil
 		}
 		if err := db.UpdateTaskStatus(s.db, args.ID, "closed"); err != nil {
 			return toolError(err), nil, nil
 		}
 		return toolText(fmt.Sprintf("Task %s closed.", args.ID)), nil, nil
+	})
+
+	type startTaskArgs struct {
+		ID string `json:"id" jsonschema:"Task ID (e.g. ERIC-1)"`
+	}
+	mcp.AddTool(mcpServer, &mcp.Tool{
+		Name:        "start_task",
+		Description: "Mark a task as in-progress. Multiple tasks can be in-progress simultaneously.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args startTaskArgs) (*mcp.CallToolResult, any, error) {
+		if err := db.StartTask(s.db, args.ID); err != nil {
+			return toolError(err), nil, nil
+		}
+		return toolText(fmt.Sprintf("Task %s is now in progress.", args.ID)), nil, nil
 	})
 }
 

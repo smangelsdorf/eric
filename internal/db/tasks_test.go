@@ -133,6 +133,62 @@ func TestUpdateTaskStatus(t *testing.T) {
 	}
 }
 
+func TestStartTask(t *testing.T) {
+	dbPath := t.TempDir() + "/test.db"
+	database, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("opening database: %v", err)
+	}
+	defer database.Close()
+
+	RegisterProject(database, "a", "")
+	RegisterProject(database, "b", "")
+
+	CreateTask(database, "Task 1", "a", "b", staticPath("/tmp/1.md"))
+	CreateTask(database, "Task 2", "a", "b", staticPath("/tmp/2.md"))
+
+	// Start task 1
+	if err := StartTask(database, "ERIC-1"); err != nil {
+		t.Fatalf("starting task: %v", err)
+	}
+	task, _ := GetTask(database, "ERIC-1")
+	if task.Status != "in_progress" {
+		t.Fatalf("expected in_progress, got %s", task.Status)
+	}
+
+	// Start task 2 — both should be in-progress
+	if err := StartTask(database, "ERIC-2"); err != nil {
+		t.Fatalf("starting task 2: %v", err)
+	}
+	task1, _ := GetTask(database, "ERIC-1")
+	if task1.Status != "in_progress" {
+		t.Fatalf("expected task 1 still in_progress, got %s", task1.Status)
+	}
+	task2, _ := GetTask(database, "ERIC-2")
+	if task2.Status != "in_progress" {
+		t.Fatalf("expected task 2 in_progress, got %s", task2.Status)
+	}
+}
+
+func TestStartTaskRejectsClosed(t *testing.T) {
+	dbPath := t.TempDir() + "/test.db"
+	database, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("opening database: %v", err)
+	}
+	defer database.Close()
+
+	RegisterProject(database, "a", "")
+	RegisterProject(database, "b", "")
+
+	CreateTask(database, "Task", "a", "b", staticPath("/tmp/1.md"))
+	UpdateTaskStatus(database, "ERIC-1", "closed")
+
+	if err := StartTask(database, "ERIC-1"); err == nil {
+		t.Fatal("expected error starting closed task")
+	}
+}
+
 func TestGetTaskNotFound(t *testing.T) {
 	dbPath := t.TempDir() + "/test.db"
 	database, err := Open(dbPath)

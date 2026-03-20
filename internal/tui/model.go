@@ -169,14 +169,20 @@ func (m Model) handleTableKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cursor < len(m.tasks) {
 			return m, loadModalContentCmd(m.tasks[m.cursor].FilePath)
 		}
-	case "c":
+	case "s":
 		if m.cursor < len(m.tasks) && m.tasks[m.cursor].Status == "open" {
+			task := m.tasks[m.cursor]
+			db.StartTask(m.db, task.ID)
+			return m, loadTasksCmd(m.db)
+		}
+	case "c":
+		if m.cursor < len(m.tasks) && (m.tasks[m.cursor].Status == "open" || m.tasks[m.cursor].Status == "in_progress") {
 			task := m.tasks[m.cursor]
 			db.UpdateTaskStatus(m.db, task.ID, "closed")
 			return m, loadTasksCmd(m.db)
 		}
 	case "o":
-		if m.cursor < len(m.tasks) && m.tasks[m.cursor].Status == "closed" {
+		if m.cursor < len(m.tasks) && m.tasks[m.cursor].Status != "open" {
 			task := m.tasks[m.cursor]
 			db.UpdateTaskStatus(m.db, task.ID, "open")
 			return m, loadTasksCmd(m.db)
@@ -248,12 +254,22 @@ func (m Model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }
 
+func statusOrder(s string) int {
+	switch s {
+	case "in_progress":
+		return 0
+	case "open":
+		return 1
+	default:
+		return 2
+	}
+}
+
 func sortTasks(tasks []db.Task) []db.Task {
 	sort.SliceStable(tasks, func(i, j int) bool {
-		iOpen := tasks[i].Status == "open"
-		jOpen := tasks[j].Status == "open"
-		if iOpen != jOpen {
-			return iOpen // open first
+		oi, oj := statusOrder(tasks[i].Status), statusOrder(tasks[j].Status)
+		if oi != oj {
+			return oi < oj
 		}
 		return tasks[i].CreatedAt.After(tasks[j].CreatedAt) // newest first within group
 	})
