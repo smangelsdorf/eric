@@ -37,3 +37,14 @@ claude mcp add --transport stdio --scope user eric -- /path/to/eric
 ```
 
 Data is stored in `~/.eric/` (SQLite database and Markdown task files).
+
+## TUI
+
+A terminal interface for browsing and managing tasks directly:
+
+```bash
+go build -o eric-tui ./cmd/eric-tui
+./eric-tui
+```
+
+The TUI shows all tasks in a navigable table (open tasks first), with keyboard shortcuts to view task details, close, and reopen tasks. It automatically refreshes when tasks are created or modified by the MCP server in another session.
