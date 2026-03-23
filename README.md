@@ -26,16 +26,30 @@ A **task** represents a piece of work passed from one project to another:
 
 A **project** is a named entity registered with Eric. Projects are not tied to working directories (because of Git worktrees, among other reasons) — they must be explicitly registered before tasks can reference them.
 
-## Setup
-
-Build the binary, then register it as an MCP server:
+## Install
 
 ```bash
-go build -o eric .
+go install github.com/smangelsdorf/eric@latest
+go install github.com/smangelsdorf/eric/cmd/eric-tui@latest
+```
 
+Or from a local checkout:
+
+```bash
+go install .
+go install ./cmd/eric-tui
+```
+
+Both binaries are installed to `$GOBIN` (or `$GOPATH/bin`), which should be on your `$PATH`.
+
+## Setup
+
+Register eric as an MCP server:
+
+```bash
 claude mcp add --transport stdio --scope user \
   --allow-tools "mcp__eric__list_*,mcp__eric__get_task,mcp__eric__search_tasks" \
-  eric -- /path/to/eric
+  eric -- eric
 ```
 
 This pre-approves the read-only tools (`list_projects`, `list_tasks`, `get_task`, `search_tasks`) so they won't prompt for confirmation each time. Mutating tools (`create_task`, `update_task`, `close_task`, `register_project`) will still require approval.
@@ -44,11 +58,6 @@ Data is stored in `~/.eric/` (SQLite database and Markdown task files).
 
 ## TUI
 
-A terminal interface for browsing and managing tasks directly:
-
-```bash
-go build -o eric-tui ./cmd/eric-tui
-./eric-tui
-```
+`eric-tui` is a terminal interface for browsing and managing tasks directly.
 
 The TUI shows all tasks in a navigable table (open tasks first), with keyboard shortcuts to view task details, close, and reopen tasks. It automatically refreshes when tasks are created or modified by the MCP server in another session.
