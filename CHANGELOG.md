@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-23
+
+- Fix TUI modal overflow caused by incorrect lipgloss Height/Width accounting
+- Add task metadata header (ID, summary, origin → destination) to modal preview
+- Fix rune-aware line wrapping for multi-byte characters
+
 ## 2026-03-20
 
 - Add in-progress task status with `start_task` MCP tool, TUI shortcut (`s`), and sort priority above open tasks

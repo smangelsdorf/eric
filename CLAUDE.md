@@ -25,6 +25,10 @@ go vet ./...            # Static analysis
 - Task content stored as Markdown flat files on disk
 - SQLite used for the task/project index
 
+## Changelog
+
+- `CHANGELOG.md` — datestamped changelog; update with each commit that adds, changes, or fixes user-visible behaviour
+
 ## Dependencies
 
 - **MCP**: [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk) — official Go SDK for MCP
