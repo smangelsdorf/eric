@@ -1,1 +1,6 @@
 eric
+eric-tui
+*.md
+!README.md
+!CLAUDE.md
+!CHANGELOG.md

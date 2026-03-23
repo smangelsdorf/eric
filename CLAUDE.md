@@ -22,7 +22,6 @@ go vet ./...            # Static analysis
 ## Project Structure
 
 - `go.mod` — module: `github.com/smangelsdorf/eric`
-- `PLAN.md` — project plan with checkboxes, update as work is completed
 - Task content stored as Markdown flat files on disk
 - SQLite used for the task/project index
 
