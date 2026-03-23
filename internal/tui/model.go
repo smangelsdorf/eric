@@ -23,6 +23,7 @@ type Model struct {
 	tasks        []db.Task
 	cursor       int
 	view         viewState
+	modalTask    *db.Task
 	modalContent string
 	modalScroll  int
 	width        int
@@ -50,6 +51,7 @@ type dataVersionMsg struct {
 	version int
 }
 type modalContentMsg struct {
+	task    *db.Task
 	content string
 	err     error
 }
@@ -77,10 +79,10 @@ func checkDataVersionCmd(database *sql.DB) tea.Cmd {
 	}
 }
 
-func loadModalContentCmd(filePath string) tea.Cmd {
+func loadModalContentCmd(task db.Task) tea.Cmd {
 	return func() tea.Msg {
-		content, err := storage.ReadTaskFile(filePath)
-		return modalContentMsg{content: content, err: err}
+		content, err := storage.ReadTaskFile(task.FilePath)
+		return modalContentMsg{task: &task, content: content, err: err}
 	}
 }
 
@@ -142,6 +144,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.modalContent = msg.content
 		m.modalScroll = 0
 		m.view = viewModal
+		m.modalTask = msg.task
 		return m, nil
 	}
 
@@ -167,7 +170,7 @@ func (m Model) handleTableKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.clampCursor()
 	case " ":
 		if m.cursor < len(m.tasks) {
-			return m, loadModalContentCmd(m.tasks[m.cursor].FilePath)
+			return m, loadModalContentCmd(m.tasks[m.cursor])
 		}
 	case "s":
 		if m.cursor < len(m.tasks) && m.tasks[m.cursor].Status == "open" {
@@ -196,6 +199,7 @@ func (m Model) handleModalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case " ", "esc", "q":
 		m.view = viewTable
 		m.modalContent = ""
+		m.modalTask = nil
 		m.modalScroll = 0
 	case "j", "down":
 		m.modalScroll++
@@ -222,7 +226,7 @@ func (m *Model) clampCursor() {
 
 func (m Model) View() string {
 	if m.view == viewModal {
-		modal := renderModal(m.modalContent, m.modalScroll, m.width, m.height-2) // reserve hint bar
+		modal := renderModal(m.modalTask, m.modalContent, m.modalScroll, m.width, m.height-2) // reserve hint bar
 		hints := renderHints(modalHints)
 		return lipgloss.JoinVertical(lipgloss.Left, modal, hints)
 	}

@@ -1,11 +1,16 @@
 package tui
 
-import "strings"
+import (
+	"fmt"
+	"strings"
 
-func renderModal(content string, scroll, width, height int) string {
+	"github.com/smangelsdorf/eric/internal/db"
+)
+
+func renderModal(task *db.Task, content string, scroll, width, height int) string {
 	// Reserve space for border (2 top/bottom) and padding (1 top/bottom)
 	innerWidth := width - 6
-	innerHeight := height - 6
+	innerHeight := height - 4
 	if innerWidth < 20 {
 		innerWidth = 20
 	}
@@ -13,11 +18,29 @@ func renderModal(content string, scroll, width, height int) string {
 		innerHeight = 5
 	}
 
+	// Build header with task metadata
+	var header []string
+	if task != nil {
+		header = append(header, fmt.Sprintf("%s  %s", task.ID, task.Summary))
+		if task.Origin != "" || task.Destination != "" {
+			origin := task.Origin
+			if origin == "" {
+				origin = "?"
+			}
+			dest := task.Destination
+			if dest == "" {
+				dest = "?"
+			}
+			header = append(header, fmt.Sprintf("%s → %s", origin, dest))
+		}
+		header = append(header, strings.Repeat("─", innerWidth))
+	}
+
 	lines := strings.Split(content, "\n")
 
 	// Wrap long lines
 	var wrapped []string
-	for _, line := range lines {
+	for _, line := range append(header, lines...) {
 		if len(line) <= innerWidth {
 			wrapped = append(wrapped, line)
 		} else {
@@ -45,5 +68,5 @@ func renderModal(content string, scroll, width, height int) string {
 
 	body := strings.Join(visible, "\n")
 
-	return modalBorder.Width(innerWidth).Render(body)
+	return modalBorder.Width(innerWidth).Height(innerHeight).Render(body)
 }
