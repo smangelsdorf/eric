@@ -2,6 +2,11 @@
 
 ## 2026-04-10
 
+- Elevate task updates to first-class replies with own origin/destination and individual `ERIC-{n}-{r}.md` files
+- Add `replies` table with atomic per-task sequencing via `INSERT...SELECT`
+- `update_task` now requires origin and destination, creating a reply record and file
+- `get_task` and search now include reply content
+- TUI modal displays task content followed by all replies
 - Add responsive columns to TUI: Origin and Destination appear at wider terminal widths (≥120 and ≥150 respectively)
 
 ## 2026-03-23

@@ -67,6 +67,16 @@ func migrate(db *sql.DB) error {
 		);
 
 		INSERT OR IGNORE INTO task_seq (rowid, next_id) VALUES (1, 1);
+
+		CREATE TABLE IF NOT EXISTS replies (
+			task_id TEXT NOT NULL REFERENCES tasks(id),
+			seq INTEGER NOT NULL,
+			origin TEXT NOT NULL REFERENCES projects(name),
+			destination TEXT NOT NULL REFERENCES projects(name),
+			file_path TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (task_id, seq)
+		);
 	`)
 	return err
 }

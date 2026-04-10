@@ -168,7 +168,7 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 	}
 	mcp.AddTool(mcpServer, &mcp.Tool{
 		Name:        "get_task",
-		Description: "Get full details and content for a task by its ID.",
+		Description: "Get full details and content for a task by its ID, including all replies.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args getTaskArgs) (*mcp.CallToolResult, any, error) {
 		task, err := db.GetTask(s.db, args.ID)
 		if err != nil {
@@ -182,19 +182,34 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		if err != nil {
 			return toolError(fmt.Errorf("task %s: %w", task.ID, err)), nil, nil
 		}
+
+		replies, err := db.ListReplies(s.db, args.ID)
+		if err != nil {
+			return toolError(err), nil, nil
+		}
+		for _, r := range replies {
+			replyContent, err := storage.ReadTaskFile(r.FilePath)
+			if err != nil {
+				return toolError(fmt.Errorf("reply %s-%d: %w", r.TaskID, r.Seq, err)), nil, nil
+			}
+			content += "\n" + replyContent
+		}
+
 		return toolText(content), nil, nil
 	})
 
 	type updateTaskArgs struct {
-		ID      string `json:"id" jsonschema:"Task ID (e.g. ERIC-1)"`
-		Content string `json:"content" jsonschema:"Update content to append in Markdown"`
+		ID          string `json:"id" jsonschema:"Task ID (e.g. ERIC-1)"`
+		Origin      string `json:"origin" jsonschema:"Name of the project sending this reply"`
+		Destination string `json:"destination" jsonschema:"Name of the project this reply is for"`
+		Content     string `json:"content" jsonschema:"Reply content in Markdown"`
 	}
 	mcp.AddTool(mcpServer, &mcp.Tool{
 		Name:        "update_task",
-		Description: "Append an update to an existing task.",
+		Description: "Add a reply to an existing task. Each reply has its own origin and destination, tracking which project is communicating.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args updateTaskArgs) (*mcp.CallToolResult, any, error) {
 		if strings.TrimSpace(args.Content) == "" {
-			return toolError(fmt.Errorf("update content is required")), nil, nil
+			return toolError(fmt.Errorf("reply content is required")), nil, nil
 		}
 		task, err := db.GetTask(s.db, args.ID)
 		if err != nil {
@@ -203,11 +218,27 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 		if task == nil {
 			return toolError(fmt.Errorf("task %s not found", args.ID)), nil, nil
 		}
-
-		if err := storage.AppendToTaskFile(task.FilePath, args.Content); err != nil {
-			return toolError(fmt.Errorf("task %s: %w", task.ID, err)), nil, nil
+		for _, proj := range []string{args.Origin, args.Destination} {
+			exists, err := db.ProjectExists(s.db, proj)
+			if err != nil {
+				return toolError(err), nil, nil
+			}
+			if !exists {
+				return toolError(fmt.Errorf("project %q is not registered — use register_project first", proj)), nil, nil
+			}
 		}
-		return toolText(fmt.Sprintf("Updated task %s.", args.ID)), nil, nil
+
+		reply, err := db.CreateReply(s.db, args.ID, args.Origin, args.Destination, func(taskID string, seq int) string {
+			return storage.ReplyFilePath(s.storageDir, taskID, seq)
+		})
+		if err != nil {
+			return toolError(err), nil, nil
+		}
+
+		if _, err := storage.WriteReplyFile(s.storageDir, args.ID, reply.Seq, args.Origin, args.Destination, args.Content); err != nil {
+			return toolError(err), nil, nil
+		}
+		return toolText(fmt.Sprintf("Reply %s-%d added to task %s (%s → %s).", args.ID, reply.Seq, args.ID, args.Origin, args.Destination)), nil, nil
 	})
 
 	type searchTasksArgs struct {
@@ -232,6 +263,18 @@ func (s *server) registerTools(mcpServer *mcp.Server) {
 			found, err := storage.FileContains(t.FilePath, args.Query)
 			if err != nil {
 				continue
+			}
+			if !found {
+				// Check reply files
+				replies, err := db.ListReplies(s.db, t.ID)
+				if err == nil {
+					for _, r := range replies {
+						if f, err := storage.FileContains(r.FilePath, args.Query); err == nil && f {
+							found = true
+							break
+						}
+					}
+				}
 			}
 			if found {
 				matches = append(matches, t)

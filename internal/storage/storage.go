@@ -44,20 +44,27 @@ func WriteTaskFile(storageDir, taskID, summary, origin, destination, content str
 	return filePath, nil
 }
 
-func AppendToTaskFile(filePath, content string) error {
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("opening task file: %w", err)
-	}
-	defer f.Close()
+func ReplyFilePath(storageDir, taskID string, seq int) string {
+	return filepath.Join(storageDir, fmt.Sprintf("%s-%d.md", taskID, seq))
+}
+
+func WriteReplyFile(storageDir, taskID string, seq int, origin, destination, content string) (string, error) {
+	filePath := ReplyFilePath(storageDir, taskID, seq)
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	entry := fmt.Sprintf("\n---\n\n**Update** (%s):\n\n%s\n", now, content)
+	md := fmt.Sprintf("# Reply %s-%d\n\n"+
+		"- **Origin**: %s\n"+
+		"- **Destination**: %s\n"+
+		"- **Created**: %s\n\n"+
+		"---\n\n"+
+		"%s\n",
+		taskID, seq, origin, destination, now, content,
+	)
 
-	if _, err := f.WriteString(entry); err != nil {
-		return fmt.Errorf("appending to task file: %w", err)
+	if err := os.WriteFile(filePath, []byte(md), 0644); err != nil {
+		return "", fmt.Errorf("writing reply file: %w", err)
 	}
-	return nil
+	return filePath, nil
 }
 
 func ReadTaskFile(filePath string) (string, error) {

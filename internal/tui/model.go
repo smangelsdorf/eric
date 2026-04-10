@@ -53,6 +53,7 @@ type dataVersionMsg struct {
 type modalContentMsg struct {
 	task    *db.Task
 	content string
+	replies []db.Reply
 	err     error
 }
 
@@ -79,10 +80,26 @@ func checkDataVersionCmd(database *sql.DB) tea.Cmd {
 	}
 }
 
-func loadModalContentCmd(task db.Task) tea.Cmd {
+func loadModalContentCmd(database *sql.DB, task db.Task) tea.Cmd {
 	return func() tea.Msg {
 		content, err := storage.ReadTaskFile(task.FilePath)
-		return modalContentMsg{task: &task, content: content, err: err}
+		if err != nil {
+			return modalContentMsg{task: &task, err: err}
+		}
+
+		replies, err := db.ListReplies(database, task.ID)
+		if err != nil {
+			return modalContentMsg{task: &task, err: err}
+		}
+		for _, r := range replies {
+			replyContent, err := storage.ReadTaskFile(r.FilePath)
+			if err != nil {
+				return modalContentMsg{task: &task, err: err}
+			}
+			content += "\n" + replyContent
+		}
+
+		return modalContentMsg{task: &task, content: content, replies: replies, err: nil}
 	}
 }
 
@@ -170,7 +187,7 @@ func (m Model) handleTableKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.clampCursor()
 	case " ":
 		if m.cursor < len(m.tasks) {
-			return m, loadModalContentCmd(m.tasks[m.cursor])
+			return m, loadModalContentCmd(m.db, m.tasks[m.cursor])
 		}
 	case "s":
 		if m.cursor < len(m.tasks) && m.tasks[m.cursor].Status == "open" {
