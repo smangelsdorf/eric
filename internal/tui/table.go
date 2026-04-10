@@ -13,12 +13,31 @@ const (
 	colIDWidth     = 10
 	colStatusWidth = 13
 	colDateWidth   = 12
+	colOriginWidth = 15
+	colDestWidth   = 15
 	colPadding     = 2 // padding per cell (0,1 on each side)
-	colCount       = 4
+
+	// Minimum terminal widths to show optional columns
+	originMinWidth = 120
+	destMinWidth   = 150
 )
 
 func renderTable(tasks []db.Task, cursor, width, pageSize int) string {
-	summaryWidth := width - colIDWidth - colStatusWidth - colDateWidth - colCount*colPadding - 2 // 2 for borders
+	showOrigin := width >= originMinWidth
+	showDest := width >= destMinWidth
+
+	colCount := 4
+	fixedWidth := colIDWidth + colStatusWidth + colDateWidth
+	if showOrigin {
+		colCount++
+		fixedWidth += colOriginWidth
+	}
+	if showDest {
+		colCount++
+		fixedWidth += colDestWidth
+	}
+
+	summaryWidth := width - fixedWidth - colCount*colPadding - 2 // 2 for borders
 	if summaryWidth < 10 {
 		summaryWidth = 10
 	}
@@ -28,8 +47,14 @@ func renderTable(tasks []db.Task, cursor, width, pageSize int) string {
 	// Header
 	h := headerStyle.Render(pad("ID", colIDWidth)) +
 		headerStyle.Render(pad("Summary", summaryWidth)) +
-		headerStyle.Render(pad("Status", colStatusWidth)) +
-		headerStyle.Render(pad("Created", colDateWidth))
+		headerStyle.Render(pad("Status", colStatusWidth))
+	if showOrigin {
+		h += headerStyle.Render(pad("Origin", colOriginWidth))
+	}
+	if showDest {
+		h += headerStyle.Render(pad("Dest", colDestWidth))
+	}
+	h += headerStyle.Render(pad("Created", colDateWidth))
 	b.WriteString(h)
 	b.WriteString("\n")
 
@@ -63,17 +88,39 @@ func renderTable(tasks []db.Task, cursor, width, pageSize int) string {
 		status := pad(t.Status, colStatusWidth)
 		date := pad(t.CreatedAt.Format("2006-01-02"), colDateWidth)
 
+		var origin, dest string
+		if showOrigin {
+			origin = truncate(t.Origin, colOriginWidth)
+			origin = pad(origin, colOriginWidth)
+		}
+		if showDest {
+			dest = truncate(t.Destination, colDestWidth)
+			dest = pad(dest, colDestWidth)
+		}
+
 		// Per-cell styling
 		if isClosed {
 			id = closedRowStyle.Render(id)
 			summary = closedRowStyle.Render(summary)
 			status = statusClosed.Render(status)
 			date = closedRowStyle.Render(date)
+			if showOrigin {
+				origin = closedRowStyle.Render(origin)
+			}
+			if showDest {
+				dest = closedRowStyle.Render(dest)
+			}
 		} else if t.Status == "in_progress" {
 			id = inProgressRowStyle.Render(id)
 			summary = inProgressRowStyle.Render(summary)
 			status = statusInProgress.Render(status)
 			date = inProgressRowStyle.Render(date)
+			if showOrigin {
+				origin = inProgressRowStyle.Render(origin)
+			}
+			if showDest {
+				dest = inProgressRowStyle.Render(dest)
+			}
 		} else {
 			if t.Status == "open" {
 				status = statusOpen.Render(status)
@@ -85,8 +132,14 @@ func renderTable(tasks []db.Task, cursor, width, pageSize int) string {
 
 		row := cellStyle.Render(id) +
 			cellStyle.Render(summary) +
-			cellStyle.Render(status) +
-			cellStyle.Render(date)
+			cellStyle.Render(status)
+		if showOrigin {
+			row += cellStyle.Render(origin)
+		}
+		if showDest {
+			row += cellStyle.Render(dest)
+		}
+		row += cellStyle.Render(date)
 
 		if i == cursor {
 			row = cursorStyle.Render(row)

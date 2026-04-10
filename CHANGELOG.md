@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-04-10
+
+- Add responsive columns to TUI: Origin and Destination appear at wider terminal widths (≥120 and ≥150 respectively)
+
 ## 2026-03-23
 
 - Fix TUI modal overflow caused by incorrect lipgloss Height/Width accounting
